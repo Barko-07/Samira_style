@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  /* Modern functional base (mostly neutral Light Gray) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: rgba(15, 23, 42, 0.1);
+  --card: #ffffff;
+
+  /* Brand accents */
+  --primary: #475569;
+  --primary-foreground: #ffffff;
+  --accent: #ff5a1f; /* orange (logo core color) */
+  --accent-foreground: #ffffff;
+  
+  /* Deep Gray elements */
+  --gray-deep: #1e293b;
+  --gray-deep-foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Elegant Dark Gray Base */
+    --background: #0f1218;
+    --foreground: #f8fafc;
+    --muted: #94a3b8;
+    --border: rgba(255, 255, 255, 0.08);
+    --card: #161b22;
+
+    --primary: #334155;
+    --accent: #ff6a2e; /* slightly brighter for dark mode */
+    --gray-deep: #1e242c;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  text-rendering: geometricPrecision;
+}
+
+/* App-wide selection color */
+::selection {
+  background: color-mix(in oklab, var(--accent) 35%, transparent);
+}

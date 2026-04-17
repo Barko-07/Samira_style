@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: samira_style_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: samira_style
+    ports:
+      - "5432:5432"
+    volumes:
+      - samira_style_pgdata:/var/lib/postgresql/data
+
+volumes:
+  samira_style_pgdata:
+
