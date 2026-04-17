@@ -57,12 +57,12 @@ export async function getProducts(query: string = "") {
       take: 20
     });
 
-    const formattedDbProducts = products.map(p => ({
+    const formattedDbProducts = products.map((p: { id: string; title: string; price: number; images: string[]; category: string }) => ({
       id: p.id,
       title: p.title,
       price: p.price,
       image: p.images[0] || FALLBACK_PRODUCTS[0].image,
-      category: p.category.toString() 
+      category: p.category.toString()
     }));
 
     let results = formattedDbProducts;
