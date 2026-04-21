@@ -158,7 +158,7 @@ export async function adminLogout() {
     const secret = process.env.JWT_SECRET || process.env.TELEGRAM_BOT_TOKEN || "samira_admin_secret_key";
     const decoded = verifyJWT(token, secret);
     if (decoded && decoded.id) {
-       let adminDbUser = await prisma.user.findUnique({ where: { telegramId: String(decoded.id) } });
+       const adminDbUser = await prisma.user.findUnique({ where: { telegramId: String(decoded.id) } });
        await createAuditLog(adminDbUser?.id || null, "ADMIN_LOGOUT", "Admin Panel", "");
     }
   }
