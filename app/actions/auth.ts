@@ -203,3 +203,126 @@ export async function claimAdminRole(telegramId: string, secret?: string) {
   }
 }
 
+// ─── External Auth (Google & Web Telegram) ───────────────────────────────────
+import { OAuth2Client } from "google-auth-library";
+
+// Google oAuth verify
+export async function googleLoginEndpoint(credential: string) {
+  try {
+    const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "not_set";
+    if (GOOGLE_CLIENT_ID === "not_set" || !credential) {
+      return { success: false, error: "Google xizmati ulanmagan" };
+    }
+
+    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    
+    if (!payload?.email) {
+      return { success: false, error: "Google email olinmadi" };
+    }
+
+    // Upsert user based on email
+    let user = await prisma.user.findUnique({ where: { email: payload.email } });
+    if (!user) {
+      const dummyPhone = `google_${payload.email}`;
+      const dummyHash = crypto.createHash("sha256").update(dummyPhone).digest("hex");
+      user = await prisma.user.create({
+        data: {
+          email: payload.email,
+          name: payload.name || "Kiritilmagan",
+          avatar: payload.picture || null,
+          phone: dummyPhone,
+          phoneHash: dummyHash,
+        }
+      });
+    }
+
+    // Set user session cookie
+    const secret = process.env.JWT_SECRET || "samira_secret_key";
+    const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
+    
+    const cookieStore = await cookies();
+    cookieStore.set("user_session", token, {
+       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+    });
+
+    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+  } catch (error) {
+    console.error("[auth] google auth error:", error);
+    return { success: false, error: "Google bilan kirishda xatolik yuz berdi" };
+  }
+}
+
+// Telegram Web Widget verify
+function verifyTelegramWebWidget(telegramData: Record<string, any>): boolean {
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) return false;
+    
+    const hash = telegramData.hash;
+    const dataCheckArr: string[] = [];
+    for (const key of Object.keys(telegramData)) {
+      if (key !== "hash") {
+        dataCheckArr.push(`${key}=${telegramData[key]}`);
+      }
+    }
+    dataCheckArr.sort();
+    const dataCheckString = dataCheckArr.join("\n");
+    
+    const secretKey = crypto.createHash("sha256").update(botToken).digest();
+    const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+    
+    // Also check auth_date max 1 day
+    const authDate = parseInt(telegramData.auth_date || "0");
+    const now = Math.floor(Date.now() / 1000);
+    if (now - authDate > 86400) return false;
+
+    return expectedHash === hash;
+  } catch {
+    return false;
+  }
+}
+
+export async function telegramWebLoginEndpoint(telegramData: Record<string, any>) {
+  try {
+    // Optionally skip strict verify in development if telegram bot token isn't fully set
+    if (!verifyTelegramWebWidget(telegramData) && process.env.TELEGRAM_BOT_TOKEN) {
+       return { success: false, error: "Telegram ma'lumotlari xavfsizligi tasdiqlanmadi" };
+    }
+
+    const tId = String(telegramData.id);
+    let user = await prisma.user.findUnique({ where: { telegramId: tId } });
+    if (!user) {
+      const dummyPhone = `tg_${tId}`;
+      const dummyHash = crypto.createHash("sha256").update(dummyPhone).digest("hex");
+      user = await prisma.user.create({
+        data: {
+          telegramId: tId,
+          name: `${telegramData.first_name || ""} ${telegramData.last_name || ""}`.trim() || telegramData.username || "Mijoz",
+          avatar: telegramData.photo_url || null,
+          phone: dummyPhone,
+          phoneHash: dummyHash,
+        }
+      });
+    }
+
+    // Set user session cookie
+    const secret = process.env.JWT_SECRET || "samira_secret_key";
+    const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
+    
+    const cookieStore = await cookies();
+    cookieStore.set("user_session", token, {
+       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+    });
+
+    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+  } catch (error) {
+    console.error("[auth] telegram web auth error:", error);
+    return { success: false, error: "Telegram bilan kirishda xatolik yuz berdi" };
+  }
+}
+

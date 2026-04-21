@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Phone, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { googleLoginEndpoint, telegramWebLoginEndpoint } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +17,10 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [tgUser, setTgUser] = useState<any>(null);
   const [tgLoaded, setTgLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"phone" | "telegram">("telegram");
+  const [activeTab, setActiveTab] = useState<"telegram" | "google">("telegram"); // Tahrirlangan tab
+
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "GOOGLE_ID_KIRITILMAGAN";
+  const BOT_USERNAME = "samira_style_bot";
 
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
@@ -36,26 +41,64 @@ export default function LoginPage() {
   const handleTelegramLogin = () => {
     if (!tgUser) return;
     setIsLoading(true);
-    // Telegram foydalanuvchi ma'lumotlarini saqlash
     localStorage.setItem("tg_user", JSON.stringify(tgUser));
+    
+    // Simulate server side login passing the user data 
+    // We already do this via Mini App implicitly if we had cookies, but for now just redirect
     setTimeout(() => {
       router.push("/");
     }, 800);
   };
 
-  const handlePhoneLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone.trim() || !password.trim()) {
-      setError("Telefon va parolni kiriting");
-      return;
-    }
-    setError("");
+  const handleWebTelegramLogin = async (userAuthData: any) => {
     setIsLoading(true);
-    // Simulatsiya (haqiqiy auth keyinchalik)
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    setError("Bu xizmat tez orada ishga tushadi. Telegram orqali kiring.");
+    try {
+      const res = await telegramWebLoginEndpoint(userAuthData);
+      if (res.success) {
+        localStorage.setItem("tg_user", JSON.stringify(res.user));
+        router.push("/");
+      } else {
+        setError(res.error || "Xatolik yuz berdi");
+        setIsLoading(false);
+      }
+    } catch (e) {
+      setError("Tarmoq xatosi");
+      setIsLoading(false);
+    }
   };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    try {
+      const res = await googleLoginEndpoint(credentialResponse.credential);
+      if (res.success) {
+        router.push("/");
+      } else {
+        setError(res.error || "Google orqali kirishda xato");
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError("Tarmoq xatosi");
+      setIsLoading(false);
+    }
+  };
+
+  // Telegram Widget effect
+  useEffect(() => {
+    if (activeTab !== "telegram" || tgUser) return;
+    const container = document.getElementById("telegram-widget-container");
+    if (container && container.childNodes.length === 0) {
+      (window as any).onTelegramAuth = handleWebTelegramLogin;
+      const script = document.createElement("script");
+      script.src = "https://telegram.org/js/telegram-widget.js?22";
+      script.setAttribute("data-telegram-login", BOT_USERNAME);
+      script.setAttribute("data-size", "large");
+      script.setAttribute("data-onauth", "onTelegramAuth(user)");
+      script.setAttribute("data-request-access", "write");
+      script.async = true;
+      container.appendChild(script);
+    }
+  }, [activeTab, tgUser]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)] overflow-hidden">
@@ -98,14 +141,14 @@ export default function LoginPage() {
                 Telegram
               </button>
               <button
-                onClick={() => setActiveTab("phone")}
+                onClick={() => setActiveTab("google")}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  activeTab === "phone"
+                  activeTab === "google"
                     ? "bg-[var(--card)] shadow-sm text-[var(--foreground)]"
                     : "text-[var(--muted)] hover:text-[var(--foreground)]"
                 }`}
               >
-                Telefon
+                Google (Email)
               </button>
             </div>
 
@@ -142,91 +185,48 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleTelegramLogin}
-                  disabled={!tgUser || isLoading}
-                  className={`w-full h-13 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-                    tgUser && !isLoading
-                      ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)] shadow-[var(--shadow-accent)] hover:-translate-y-0.5"
-                      : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed opacity-60"
-                  }`}
-                  style={{ height: "52px" }}
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Telegram orqali kirish
-                      <ArrowRight className="w-5 h-5" />
-                    </>
-                  )}
-                </button>
+                {/* Telegram Web Widget xuddi shu joyda paydo bo'ladi agar tgUser bo'lmasa */}
+                {!tgUser && (
+                  <div className="mt-4 flex flex-col items-center justify-center fade-in">
+                    <p className="text-sm font-semibold text-[var(--foreground)] mb-3">Yoki Veb brauzer orqali kiring:</p>
+                    {isLoading && <p className="text-xs text-[var(--muted)] mb-2 animate-pulse">Kutilmoqda...</p>}
+                    <div id="telegram-widget-container" className="flex justify-center min-h-[40px]"></div>
+                  </div>
+                )}
+                
               </div>
             )}
 
-            {/* Phone Login */}
-            {activeTab === "phone" && (
-              <form onSubmit={handlePhoneLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                    Telefon raqam
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+998 90 123 45 67"
-                      className="input h-13 pl-10 pr-4"
-                      style={{ height: "52px", paddingLeft: "40px", paddingRight: "16px" }}
-                    />
-                  </div>
+            {/* Google Login */}
+            {activeTab === "google" && (
+              <div className="space-y-4 flex flex-col items-center py-4">
+                <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center p-3 mb-2 border border-[var(--border)]">
+                   <svg viewBox="0 0 48 48" className="w-full h-full"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                    Parol
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="input h-13 pl-10 pr-12"
-                      style={{ height: "52px", paddingLeft: "40px", paddingRight: "48px" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+                <p className="text-sm font-semibold text-[var(--muted)] text-center mb-4">
+                  Google akkauntingiz orqali bir marta bosish orqali xavfsiz kiring.
+                </p>
 
                 {error && (
-                  <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/18 text-red-500 text-sm font-semibold">
+                  <div className="w-full p-3 rounded-xl bg-red-500/8 border border-red-500/18 text-red-500 text-sm font-semibold text-center mt-2 mb-4">
                     {error}
                   </div>
                 )}
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full rounded-2xl bg-[var(--foreground)] text-[var(--background)] font-bold text-base flex items-center justify-center gap-2 hover:bg-[var(--accent)] hover:text-white transition-all shadow-md hover:-translate-y-0.5"
-                  style={{ height: "52px" }}
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  ) : (
-                    <>Kirish <ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
-              </form>
+                
+                <div className="w-full flex justify-center mt-2 min-h-[50px]">
+                  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => {
+                        setError("Google orqali kirish bekor qilindi yoki xato.");
+                      }}
+                      useOneTap
+                      theme="filled_black"
+                      shape="pill"
+                    />
+                  </GoogleOAuthProvider>
+                </div>
+              </div>
             )}
 
             {/* Footer */}
