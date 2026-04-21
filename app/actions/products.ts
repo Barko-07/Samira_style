@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAdminAuth } from "@/app/actions/auth";
 import type { Prisma, ProductCategory } from "@prisma/client";
 
 // ─── Prisma utility type for selected product fields ─────────────────────────
@@ -118,6 +119,31 @@ const FALLBACK_PRODUCTS: ProductSummary[] = [
     variants: [],
     reviews: [],
   },
+  {
+    id: "mock-7",
+    title: "Ayollar Charm Sumkasi",
+    price: 620000,
+    category: "Aksessuar",
+    image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=500&q=80",
+    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=500&q=80"],
+    description: "Premium italyan charm'dan yasalgan zamonaviy ayollar sumkasi.",
+    variants: [{ id: "v7", size: "Standart", color: "Qora", stock: 8 }, { id: "v8", size: "Standart", color: "Jigarrang", stock: 4 }],
+    reviews: [],
+  },
+  {
+    id: "mock-8",
+    title: "Erkaklar Sport Shortsasi",
+    price: 95000,
+    category: "Erkaklar",
+    image: "https://images.unsplash.com/photo-1562183241-b937e9102303?auto=format&fit=crop&w=500&q=80",
+    images: ["https://images.unsplash.com/photo-1562183241-b937e9102303?auto=format&fit=crop&w=500&q=80"],
+    description: "Sport mashg'ulotlari va dam olish uchun qulay shortlar.",
+    variants: [
+      { id: "v9", size: "M", color: "Qora", stock: 20 },
+      { id: "v10", size: "L", color: "Kul rang", stock: 12 },
+    ],
+    reviews: [],
+  },
 ];
 
 // ─── Category enum → readable Uzbek label ────────────────────────────────────
@@ -133,8 +159,21 @@ function categoryLabel(cat: ProductCategory): string {
 
 // ─── Fetch product list ───────────────────────────────────────────────────────
 export async function getProducts(query: string = ""): Promise<{ success: boolean; data: ProductSummary[] }> {
+  if (!prisma) {
+    return {
+      success: true,
+      data: query
+        ? FALLBACK_PRODUCTS.filter(
+            (p) =>
+              p.title.toLowerCase().includes(query.toLowerCase()) ||
+              p.category.toLowerCase().includes(query.toLowerCase())
+          )
+        : FALLBACK_PRODUCTS,
+    };
+  }
+
   try {
-    const rows: ProductRow[] = await prisma.product.findMany({
+    const rows: ProductRow[] = await (prisma as unknown as import("@prisma/client").PrismaClient).product.findMany({
       where: query
         ? {
             OR: [
@@ -150,7 +189,8 @@ export async function getProducts(query: string = ""): Promise<{ success: boolea
         images: true,
         category: true,
       },
-      take: 20,
+      take: 50,
+      orderBy: { createdAt: "desc" },
     });
 
     const data: ProductSummary[] = rows.map((p: ProductRow) => ({
@@ -190,11 +230,14 @@ export async function getProducts(query: string = ""): Promise<{ success: boolea
 }
 
 // ─── Fetch single product by ID ───────────────────────────────────────────────
-export async function getProductById(
-  id: string
-): Promise<{ success: boolean; data: unknown }> {
+export async function getProductById(id: string): Promise<{ success: boolean; data: unknown }> {
+  if (!prisma) {
+    const fallback = FALLBACK_PRODUCTS.find((p) => p.id === id);
+    return fallback ? { success: true, data: fallback } : { success: false, data: null };
+  }
+
   try {
-    const product = await prisma.product.findUnique({
+    const product = await (prisma as unknown as import("@prisma/client").PrismaClient).product.findUnique({
       where: { id },
       include: {
         variants: true,
@@ -219,4 +262,170 @@ export async function getProductById(
   }
 
   return { success: false, data: null };
+}
+
+// ─── Admin: Get all products (with full details) ──────────────────────────────
+export async function getAdminProducts(): Promise<{ success: boolean; data: any[] }> {
+  try {
+    await requireAdminAuth();
+  } catch {
+    return { success: false, data: [] };
+  }
+
+  if (!prisma) {
+    return { success: true, data: FALLBACK_PRODUCTS };
+  }
+
+  try {
+    const products = await (prisma as unknown as import("@prisma/client").PrismaClient).product.findMany({
+      include: {
+        variants: true,
+        store: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const data = products.map((p: any) => ({
+      ...p,
+      image: p.images[0] ?? "",
+      category: categoryLabel(p.category),
+    }));
+
+    return { success: true, data };
+  } catch {
+    return { success: true, data: FALLBACK_PRODUCTS };
+  }
+}
+
+// ─── Admin: Create product ────────────────────────────────────────────────────
+export async function createProduct(formData: {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images: string[];
+  storeId?: string;
+}): Promise<{ success: boolean; error?: string; data?: any }> {
+  try {
+    await requireAdminAuth();
+  } catch {
+    return { success: false, error: "Ruxsat yo'q" };
+  }
+
+  if (!prisma) {
+    return { success: false, error: "Ma'lumotlar bazasiga ulanish yo'q" };
+  }
+
+  try {
+    const pc = prisma as unknown as import("@prisma/client").PrismaClient;
+
+    // Birinchi store'ni top yoki yaratamiz
+    let store = await pc.store.findFirst();
+    if (!store) {
+      const adminUser = await pc.user.findFirst({ where: { role: "ADMIN" } });
+      if (!adminUser) {
+        return { success: false, error: "Admin foydalanuvchi topilmadi" };
+      }
+      store = await pc.store.create({
+        data: {
+          sellerId: adminUser.id,
+          name: "Samira Style",
+          verified: true,
+        },
+      });
+    }
+
+    const categoryMap: Record<string, ProductCategory> = {
+      "Erkaklar": "MEN",
+      "Ayollar": "WOMEN",
+      "Bolalar": "KIDS",
+      "Aksessuar": "ACCESSORIES",
+    };
+
+    const product = await pc.product.create({
+      data: {
+        storeId: formData.storeId ?? store.id,
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        category: categoryMap[formData.category] ?? "MEN",
+        images: formData.images,
+        status: "APPROVED",
+      },
+    });
+
+    return { success: true, data: product };
+  } catch (err) {
+    console.error("createProduct error:", err);
+    return { success: false, error: "Mahsulot qo'shishda xatolik" };
+  }
+}
+
+// ─── Admin: Delete product ────────────────────────────────────────────────────
+export async function deleteProduct(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAdminAuth();
+  } catch {
+    return { success: false, error: "Ruxsat yo'q" };
+  }
+
+  if (!prisma || id.startsWith("mock-")) {
+    return { success: true }; // Fallback mahsulotlarni o'chirish mumkin emas
+  }
+
+  try {
+    await (prisma as unknown as import("@prisma/client").PrismaClient).product.delete({
+      where: { id },
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("deleteProduct error:", err);
+    return { success: false, error: "O'chirishda xatolik" };
+  }
+}
+
+// ─── Admin: Update product ────────────────────────────────────────────────────
+export async function updateProduct(
+  id: string,
+  data: Partial<{
+    title: string;
+    description: string;
+    price: number;
+    images: string[];
+    category: string;
+  }>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAdminAuth();
+  } catch {
+    return { success: false, error: "Ruxsat yo'q" };
+  }
+
+  if (!prisma || id.startsWith("mock-")) {
+    return { success: false, error: "Namoyish mahsulotlarini o'zgartirib bo'lmaydi" };
+  }
+
+  const categoryMap: Record<string, ProductCategory> = {
+    "Erkaklar": "MEN",
+    "Ayollar": "WOMEN",
+    "Bolalar": "KIDS",
+    "Aksessuar": "ACCESSORIES",
+  };
+
+  try {
+    await (prisma as unknown as import("@prisma/client").PrismaClient).product.update({
+      where: { id },
+      data: {
+        ...(data.title && { title: data.title }),
+        ...(data.description && { description: data.description }),
+        ...(data.price && { price: data.price }),
+        ...(data.images && { images: data.images }),
+        ...(data.category && { category: categoryMap[data.category] ?? "MEN" }),
+      },
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("updateProduct error:", err);
+    return { success: false, error: "Yangilashda xatolik" };
+  }
 }
