@@ -11,10 +11,11 @@ import { getCategories, addCategory, deleteCategory, toggleCategory } from "@/ap
 import { adminLoginEndpoint, adminLogout } from "@/app/actions/auth";
 import { getAdminProducts, createProduct, deleteProduct } from "@/app/actions/products";
 import { getOrders, updateOrderStatus } from "@/app/actions/orders";
+import { getAuditLogs } from "@/app/actions/logs";
 import { orderStatusLabel } from "@/lib/orderUtils";
 import Image from "next/image";
 
-type Tab = "stats" | "products" | "orders" | "categories";
+type Tab = "stats" | "products" | "orders" | "categories" | "logs";
 
 // ─── Order Status Badge ───────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -44,9 +45,10 @@ export default function AdminPage() {
   const [loadingAction, setLoadingAction] = useState(false);
 
   // Dashboard state
-  const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
+  const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0, products: 0, transactions: 0 });
   const [categories, setCategories] = useState<any[]>([]);
   const [newCatName, setNewCatName] = useState("");
+  const [logs, setLogs] = useState<any[]>([]);
 
   // Products state
   const [products, setProducts] = useState<any[]>([]);
@@ -74,16 +76,18 @@ export default function AdminPage() {
   }, []);
 
   const fetchDashboardData = useCallback(async () => {
-    const [statsRes, catRes, prodRes, ordRes] = await Promise.all([
+    const [statsRes, catRes, prodRes, ordRes, logRes] = await Promise.all([
       getAdminStats(),
       getCategories(),
       getAdminProducts(),
       getOrders(),
+      getAuditLogs()
     ]);
-    if (statsRes.success && statsRes.stats) setStats(statsRes.stats);
+    if (statsRes.success && statsRes.stats) setStats(statsRes.stats as any);
     if (catRes.success && catRes.data) setCategories(catRes.data);
     if (prodRes.success) setProducts(prodRes.data);
     if (ordRes.success) setOrders(ordRes.data);
+    if (logRes.success && logRes.data) setLogs(logRes.data);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -237,6 +241,7 @@ export default function AdminPage() {
     { key: "products",   label: "Mahsulotlar", icon: <Package className="w-4 h-4" />, count: products.length },
     { key: "orders",     label: "Buyurtmalar", icon: <ClipboardList className="w-4 h-4" />, count: orders.length },
     { key: "categories", label: "Kategoriyalar", icon: <Tag className="w-4 h-4" />, count: categories.length },
+    { key: "logs",       label: "Xavfsizlik", icon: <ShieldAlert className="w-4 h-4" />, count: logs.length > 50 ? 50 : logs.length },
   ];
 
   return (
@@ -310,6 +315,8 @@ export default function AdminPage() {
                 { label: "Buyurtmalar", value: `${stats.orders} ta`, icon: <ShoppingBag className="w-6 h-6" />, color: "text-[var(--accent)]", bg: "bg-[var(--accent)]/8" },
                 { label: "Tushum", value: `${stats.revenue.toLocaleString("ru").replace(/\s/g, " ")} so'm`, icon: <DollarSign className="w-6 h-6" />, color: "text-green-500", bg: "bg-green-500/8" },
                 { label: "Foydalanuvchilar", value: `${stats.users} ta`, icon: <Users className="w-6 h-6" />, color: "text-blue-500", bg: "bg-blue-500/8" },
+                { label: "Tovarlar", value: `${stats.products} xil`, icon: <Package className="w-6 h-6" />, color: "text-purple-500", bg: "bg-purple-500/8" },
+                { label: "To'lovlar", value: `${stats.transactions} marta`, icon: <ClipboardList className="w-6 h-6" />, color: "text-orange-500", bg: "bg-orange-500/8" },
               ].map((s, i) => (
                 <div key={i} className="card p-6 flex items-center justify-between">
                   <div>
@@ -427,27 +434,38 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Products Grid (Uzum Market Style) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mt-6">
               {products.map((p) => (
-                <div key={p.id} className="card p-4 flex gap-3">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[var(--card)] flex-shrink-0">
-                    {p.image && (
-                      <Image src={p.image} alt={p.title} fill className="object-cover" unoptimized />
+                <div key={p.id} className="card group flex flex-col overflow-hidden bg-[var(--background)] hover:shadow-lg transition-all border border-[var(--border)] rounded-2xl relative">
+                  <div className="relative w-full aspect-[4/5] bg-[var(--card)] flex items-center justify-center overflow-hidden">
+                    {p.images && p.images.length > 0 ? (
+                      <Image src={p.images[0]} alt={p.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+                    ) : (
+                      <Package className="w-8 h-8 text-[var(--muted)] opacity-20" />
                     )}
+                    <button
+                      onClick={() => handleDeleteProduct(p.id)}
+                      disabled={loadingAction}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider">
+                      {p.category}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm line-clamp-1">{p.title}</p>
-                    <p className="text-xs text-[var(--muted)] mt-0.5">{p.category}</p>
-                    <p className="text-sm font-black text-[var(--accent)] mt-1">{p.price?.toLocaleString("ru")} so'm</p>
+                  <div className="p-3 flex-1 flex flex-col">
+                    <p className="font-medium text-sm flex-1 leading-tight text-[var(--foreground)]/90 group-hover:text-[var(--accent)] transition-colors line-clamp-2">
+                       {p.title}
+                    </p>
+                    <div className="mt-3">
+                      <p className="text-[10px] text-[var(--muted)] line-through decoration-red-500/50 mb-0.5">
+                        {(p.price * 1.2).toLocaleString("ru")} so'm
+                      </p>
+                      <p className="text-sm font-black text-[var(--foreground)]">{p.price?.toLocaleString("ru")} so'm</p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteProduct(p.id)}
-                    disabled={loadingAction}
-                    className="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors flex-shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
               {products.length === 0 && (
@@ -605,6 +623,67 @@ export default function AdminPage() {
               <p className="text-xs text-[var(--muted)]">
                 Admin ({tgUser?.id ?? "Browser"}). Muhim: mahsulotlarga biriktirish uchun kategoriyalar kerak.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── LOGLAR (XAVFSIZLIK JURNALI) ── */}
+        {activeTab === "logs" && (
+          <div className="space-y-4 animate-fade-in">
+            <h2 className="text-xl font-extrabold flex items-center gap-2">
+              <ShieldAlert className="text-[var(--accent)]" /> Xavfsizlik Jurnali
+            </h2>
+            <div className="card p-0 overflow-hidden text-sm relative">
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                   <thead className="bg-[var(--card-hover)] border-b border-[var(--border)] text-[var(--muted)] text-xs uppercase font-bold tracking-wider">
+                     <tr>
+                       <th className="px-4 py-3">Vaqt</th>
+                       <th className="px-4 py-3">Harakat</th>
+                       <th className="px-4 py-3">Foydalanuvchi</th>
+                       <th className="px-4 py-3">Tafsilot</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-[var(--border)]">
+                     {logs.map((log) => (
+                       <tr key={log.id} className="hover:bg-[var(--card-hover)]/50 transition-colors">
+                         <td className="px-4 py-3 whitespace-nowrap text-xs text-[var(--muted)]">
+                           {new Date(log.createdAt).toLocaleString("uz-UZ", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                         </td>
+                         <td className="px-4 py-3 font-bold">
+                           <span className={`px-2 py-1 rounded-md text-[10px] ${
+                             log.action.includes("LOGIN") ? "bg-green-500/10 text-green-500" :
+                             log.action.includes("LOGOUT") ? "bg-red-500/10 text-red-500" :
+                             log.action.includes("CLAIM") ? "bg-purple-500/10 text-purple-500" :
+                             "bg-blue-500/10 text-blue-500"
+                           }`}>
+                             {log.action}
+                           </span>
+                         </td>
+                         <td className="px-4 py-3">
+                           {log.user ? (
+                             <div className="flex flex-col">
+                               <span className="font-semibold">{log.user.name || log.user.id.slice(0,8)}</span>
+                               <span className="text-[10px] text-[var(--muted)]">{log.user.role}</span>
+                             </div>
+                           ) : (
+                             <span className="text-[var(--muted)] italic">Noma'lum / Sistem</span>
+                           )}
+                         </td>
+                         <td className="px-4 py-3 text-xs text-[var(--muted)] truncate max-w-[200px]">
+                           {log.target || "-"} {log.ipAddress ? `[IP: ${log.ipAddress}]` : ""}
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+                 {logs.length === 0 && (
+                   <div className="text-center py-12 text-[var(--muted)]">
+                     <ShieldAlert className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                     <p className="font-semibold">Hech qanday harakat qayd etilmagan</p>
+                   </div>
+                 )}
+               </div>
             </div>
           </div>
         )}

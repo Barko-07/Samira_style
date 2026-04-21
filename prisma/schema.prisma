@@ -82,7 +82,6 @@ model User {
   buyerOrders Order[]
   reviews     Review[]
   auditLogs   AuditLog[]
-
   @@index([phoneHash])
 }
 
@@ -232,16 +231,17 @@ model PromoCode {
 }
 
 model AuditLog {
-  id      String   @id @default(cuid())
-  adminId String
-  action  String
-  target  String
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  target    String?
+  ipAddress String?
 
   createdAt DateTime @default(now())
 
-  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([adminId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model CustomCategory {

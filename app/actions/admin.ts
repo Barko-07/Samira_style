@@ -8,9 +8,9 @@ export async function getAdminStats() {
     await requireAdminAuth();
     const usersCount = await prisma.user.count();
     const ordersCount = await prisma.order.count();
-    
-    // Calculate total revenue (tiyin sum / 100) or assume tiyin is raw amount if not strictly tiyin logic
-    // Usually tiyin means stored value / 100 = som. But let's just get the sum.
+    const productsCount = await prisma.product.count();
+    const transactionsCount = await prisma.transaction.count();
+
     const revenueAggr = await prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { status: "PERFORMED" } // only successful
@@ -23,6 +23,8 @@ export async function getAdminStats() {
       stats: {
         users: usersCount,
         orders: ordersCount,
+        products: productsCount,
+        transactions: transactionsCount,
         revenue: revenue
       }
     };

@@ -8,12 +8,15 @@ import { useRouter } from "next/navigation";
 import { getMyOrders } from "@/app/actions/orders";
 import { orderStatusLabel } from "@/lib/orderUtils";
 import { useWishlistStore } from "@/store/useWishlistStore";
+import { checkIsAdmin, claimAdminRole } from "@/app/actions/auth";
 
 export default function ProfilePage() {
   const router = useRouter();
   const [tgUser, setTgUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
   const { items: wishlistItems } = useWishlistStore();
 
   useEffect(() => {
@@ -29,8 +32,15 @@ export default function ProfilePage() {
       setTgUser(user);
 
       const telegramId = user ? String(user.id) : "";
-      const res = await getMyOrders(telegramId);
-      if (res.success) setOrders(res.data);
+      
+      const [ordersRes, adminRes] = await Promise.all([
+        getMyOrders(telegramId),
+        checkIsAdmin(telegramId)
+      ]);
+
+      if (ordersRes.success) setOrders(ordersRes.data);
+      setIsAdmin(adminRes);
+      
       setIsLoading(false);
     }
     load();
@@ -39,6 +49,26 @@ export default function ProfilePage() {
   const handleLogout = () => {
     localStorage.removeItem("tg_user");
     router.push("/auth/login");
+  };
+
+  const handleAvatarClick = async () => {
+    if (isAdmin || !tgUser) return;
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+    
+    if (newCount === 5) {
+      const secret = prompt("Adminlik maxfiy so'zini kiriting:");
+      if (secret) {
+        const res = await claimAdminRole(String(tgUser.id), secret);
+        if (res.success) {
+          alert("Tabriklaymiz, siz adminga aylandingiz!");
+          setIsAdmin(true);
+        } else {
+          alert(res.error);
+        }
+      }
+      setClickCount(0);
+    }
   };
 
   return (
@@ -50,7 +80,10 @@ export default function ProfilePage() {
         {/* Profile Card */}
         <div className="card p-6 animate-fade-in">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 border border-[var(--accent)]/20 flex items-center justify-center flex-shrink-0 text-2xl font-black text-[var(--accent)]">
+            <div 
+              onClick={handleAvatarClick}
+              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 border border-[var(--accent)]/20 flex items-center justify-center flex-shrink-0 text-2xl font-black text-[var(--accent)] cursor-pointer select-none"
+            >
               {tgUser?.first_name?.charAt(0) ?? <User className="w-7 h-7" />}
             </div>
             <div className="flex-1 min-w-0">
@@ -99,6 +132,19 @@ export default function ProfilePage() {
 
         {/* Quick Links */}
         <div className="card overflow-hidden animate-slide-up">
+          {isAdmin && (
+            <Link href="/admin" className="flex items-center gap-4 px-5 py-4 hover:bg-[var(--card-hover)] transition-colors border-b border-[var(--border)]">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--background)] flex items-center justify-center border border-[var(--border)]">
+                <Shield className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm">Admin Panel</p>
+                <p className="text-xs text-[var(--muted)]">Do'konni boshqarish</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-[var(--muted)]" />
+            </Link>
+          )}
+
           {[
             { href: "/wishlist", icon: <Heart className="w-5 h-5 text-red-500" />, label: "Sevimli mahsulotlar", sub: `${wishlistItems.length} ta saqlangan` },
             { href: "/checkout", icon: <ShoppingBag className="w-5 h-5 text-[var(--accent)]" />, label: "Savat & Buyurtma", sub: "Xaridni rasmiylashtirish" },

@@ -2,6 +2,8 @@
 
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import { createAuditLog } from "./logs";
+import { prisma } from "@/lib/prisma";
 
 // ─── Telegram WebApp data verification ───────────────────────────────────────
 function verifyTelegramWebAppData(telegramInitData: string): Record<string, unknown> | false {
@@ -134,6 +136,12 @@ export async function adminLoginEndpoint(initDataString: string, passwordInput: 
       path: "/",
       maxAge: 86400,
     });
+    
+    let adminDbUser = null;
+    if (telegramUserId) {
+      adminDbUser = await prisma.user.findUnique({ where: { telegramId: telegramUserId } });
+    }
+    await createAuditLog(adminDbUser?.id || null, "ADMIN_LOGIN", "Admin Panel", "");
 
     return { success: true };
   } catch (err) {
@@ -142,9 +150,56 @@ export async function adminLoginEndpoint(initDataString: string, passwordInput: 
   }
 }
 
-// ─── Admin logout ─────────────────────────────────────────────────────────────
 export async function adminLogout() {
   const cookieStore = await cookies();
+  const token = cookieStore.get("admin_session")?.value;
+  
+  if (token) {
+    const secret = process.env.JWT_SECRET || process.env.TELEGRAM_BOT_TOKEN || "samira_admin_secret_key";
+    const decoded = verifyJWT(token, secret);
+    if (decoded && decoded.id) {
+       let adminDbUser = await prisma.user.findUnique({ where: { telegramId: String(decoded.id) } });
+       await createAuditLog(adminDbUser?.id || null, "ADMIN_LOGOUT", "Admin Panel", "");
+    }
+  }
+
   cookieStore.delete("admin_session");
   return { success: true };
 }
+
+// ─── Claim Admin Role ────────────────────────────────────────────────────────
+export async function checkIsAdmin(telegramId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { telegramId } });
+  return user?.role === "ADMIN";
+}
+
+export async function claimAdminRole(telegramId: string, secret?: string) {
+  try {
+    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+    
+    // First user claim, or secret-based claim
+    const SUPER_SECRET = process.env.ADMIN_PASSWORD || "admin1234";
+
+    if (adminCount === 0 || secret === SUPER_SECRET) {
+      // Upsert user if missing, then make admin
+      const user = await prisma.user.upsert({
+        where: { telegramId },
+        update: { role: "ADMIN" },
+        create: {
+          telegramId,
+          role: "ADMIN",
+          phone: "unknown",
+          phoneHash: crypto.randomBytes(16).toString("hex"),
+        }
+      });
+      await createAuditLog(user.id, "ADMIN_CLAIM", "Admin Role Granted", "");
+      return { success: true };
+    }
+    
+    return { success: false, error: "maxfiy so'z noto'g'ri yoki ruxsat yo'q" };
+  } catch (error) {
+    console.error("[auth] claim admin error:", error);
+    return { success: false, error: "Xatolik yuz berdi" };
+  }
+}
+
