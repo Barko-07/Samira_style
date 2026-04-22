@@ -222,14 +222,15 @@ export function Header() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
-            background: "rgba(20, 20, 22, 0.88)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            borderRadius: 40,
-            padding: "6px 8px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3)",
+            justifyContent: "space-between",
+            gap: 8,
+            background: "#ffffff",
+            border: "1px solid rgba(0,0,0,0.05)",
+            borderRadius: 48,
+            padding: "10px 20px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04)",
+            width: "100%",
+            maxWidth: 340,
           }}
         >
           {/* Nav Links */}
@@ -245,41 +246,40 @@ export function Header() {
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 3,
-                  padding: "8px 20px",
-                  borderRadius: 32,
-                  transition: "transform 0.15s ease",
+                  gap: 4,
+                  width: 60,
                   textDecoration: "none",
+                  transition: "all 0.2s ease",
                 }}
-                className="active:scale-90"
+                className="active:scale-95"
               >
-                {isActive && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      borderRadius: 32,
-                      background: "rgba(249, 115, 22, 0.22)", // var(--accent) in orange
-                    }}
-                  />
-                )}
-                <span
+                <div
                   style={{
-                    position: "relative",
-                    zIndex: 1,
-                    color: isActive ? "var(--accent)" : "rgba(255,255,255,0.45)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 44,
+                    height: 32,
+                    borderRadius: 16,
+                    background: isActive ? "rgba(249, 115, 22, 0.15)" : "transparent",
+                    transition: "background 0.2s ease",
                   }}
                 >
-                  {link.icon}
-                </span>
+                  <span
+                    style={{
+                      color: isActive ? "#ea580c" : "#64748b",
+                      transition: "color 0.2s ease",
+                    }}
+                  >
+                    {link.icon}
+                  </span>
+                </div>
                 <span
                   style={{
-                    position: "relative",
-                    zIndex: 1,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    letterSpacing: "0.02em",
-                    color: isActive ? "var(--accent)" : "rgba(255,255,255,0.35)",
+                    fontSize: 10,
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? "#ea580c" : "#64748b",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   {link.label}
@@ -297,50 +297,42 @@ export function Header() {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 3,
-              padding: "8px 20px",
-              borderRadius: 32,
-              transition: "transform 0.15s ease",
+              gap: 4,
+              width: 60,
               border: "none",
               background: "transparent",
               cursor: "pointer",
+              transition: "all 0.2s ease",
             }}
-            className="active:scale-90"
+            className="active:scale-95"
           >
-            {isCartOpen && (
-              <span
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: 32,
-                  background: "rgba(249, 115, 22, 0.22)",
-                }}
-              />
-            )}
-            <span
+            <div
               style={{
-                position: "relative",
-                zIndex: 1,
-                color: isCartOpen ? "var(--accent)" : "rgba(255,255,255,0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 32,
+                borderRadius: 16,
+                background: isCartOpen ? "rgba(249, 115, 22, 0.15)" : "transparent",
+                transition: "background 0.2s ease",
               }}
             >
               <div className="relative">
-                <ShoppingBag className="w-[23px] h-[23px]" />
+                <ShoppingBag className="w-[23px] h-[23px]" style={{ color: isCartOpen ? "#ea580c" : "#64748b" }} />
                 {getTotalItems() > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-[var(--accent)] text-white text-[9px] font-black flex items-center justify-center px-1 shadow-lg">
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-[#ea580c] text-white text-[9px] font-black flex items-center justify-center px-1 shadow-sm">
                     {getTotalItems() > 9 ? "9+" : getTotalItems()}
                   </span>
                 )}
               </div>
-            </span>
+            </div>
             <span
               style={{
-                position: "relative",
-                zIndex: 1,
-                fontSize: 9,
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                color: isCartOpen ? "var(--accent)" : "rgba(255,255,255,0.35)",
+                fontSize: 10,
+                fontWeight: isCartOpen ? 700 : 500,
+                color: isCartOpen ? "#ea580c" : "#64748b",
+                letterSpacing: "-0.01em",
               }}
             >
               Savat
@@ -356,58 +348,39 @@ export function Header() {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 3,
-              padding: "8px 20px",
-              borderRadius: 32,
-              transition: "transform 0.15s ease",
+              gap: 4,
+              width: 60,
               textDecoration: "none",
+              transition: "all 0.2s ease",
             }}
-            className="active:scale-90"
+            className="active:scale-95"
           >
-            {pathname === "/profile" && (
-              <span
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: 32,
-                  background: "rgba(249, 115, 22, 0.22)",
-                }}
-              />
-            )}
-            <span
+            <div
               style={{
-                position: "relative",
-                zIndex: 1,
-                color: pathname === "/profile" ? "var(--accent)" : "rgba(255,255,255,0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 32,
+                borderRadius: 16,
+                background: pathname === "/profile" ? "rgba(249, 115, 22, 0.15)" : "transparent",
+                transition: "background 0.2s ease",
               }}
             >
-              <User className="w-[23px] h-[23px]" />
-            </span>
+              <User className="w-[23px] h-[23px]" style={{ color: pathname === "/profile" ? "#ea580c" : "#64748b" }} />
+            </div>
             <span
               style={{
-                position: "relative",
-                zIndex: 1,
-                fontSize: 9,
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                color: pathname === "/profile" ? "var(--accent)" : "rgba(255,255,255,0.35)",
+                fontSize: 10,
+                fontWeight: pathname === "/profile" ? 700 : 500,
+                color: pathname === "/profile" ? "#ea580c" : "#64748b",
+                letterSpacing: "-0.01em",
               }}
             >
               Profil
             </span>
           </Link>
         </div>
-
-        {/* iOS home indicator */}
-        <div
-          style={{
-            width: 134,
-            height: 5,
-            borderRadius: 9999,
-            background: "rgba(255,255,255,0.22)",
-            marginTop: 8,
-          }}
-        />
       </nav>
     </>
   );

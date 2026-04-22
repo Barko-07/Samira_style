@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { CheckCircle2, ChevronRight, ShoppingBag } from "lucide-react";
 
 export default function WelcomePage() {
@@ -21,14 +20,14 @@ export default function WelcomePage() {
           Tizimga muvaffaqiyatli kirdingiz. Endi xaridlarni xavfsiz va qulay amalga oshirishingiz mumkin.
         </p>
 
-        <Link
+        <a
           href="/"
-          className="w-full h-14 bg-[#007AFF] hover:bg-[#0066CC] active:scale-[0.98] transition-all rounded-[20px] shadow-[0_8px_20px_rgba(0,122,255,0.3)] flex items-center justify-center gap-2 text-white font-bold text-[16px]"
+          className="w-full h-14 bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.98] transition-all rounded-[20px] shadow-[0_8px_20px_rgba(234,88,12,0.3)] flex items-center justify-center gap-2 text-white font-bold text-[16px]"
         >
           <ShoppingBag className="w-5 h-5" />
           Xaridlarga o'tish
           <ChevronRight className="w-5 h-5 opacity-70" />
-        </Link>
+        </a>
 
       </div>
     </div>
