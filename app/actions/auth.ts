@@ -326,3 +326,55 @@ export async function telegramWebLoginEndpoint(telegramData: Record<string, any>
   }
 }
 
+// Telegram Mini App (Bot ichidagi tugma orqali) login qilish
+export async function telegramMiniAppLoginEndpoint(initDataString: string) {
+  try {
+    const tgUser = verifyTelegramWebAppData(initDataString);
+    if (!tgUser) {
+      if (!process.env.TELEGRAM_BOT_TOKEN) {
+         // Agar bot token env da bo'lmasa ishlayverishiga ruxsat (dev rejim uchun xavfli bo'lsa-da)
+         try {
+           const raw = new URLSearchParams(initDataString);
+           const userStr = raw.get("user");
+           if (userStr) {
+             const parsed = JSON.parse(userStr);
+             return await createSessionForTelegramUser(parsed);
+           }
+         } catch(e) {}
+      }
+      return { success: false, error: "Telegram ma'lumotlari xato yoki eskirdi!" };
+    }
+    return await createSessionForTelegramUser(tgUser);
+  } catch (err) {
+    console.error("[auth] telegram mini app login error:", err);
+    return { success: false, error: "Tizim xatosi" };
+  }
+}
+
+async function createSessionForTelegramUser(telegramData: any) {
+    const tId = String(telegramData.id);
+    let user = await prisma.user.findUnique({ where: { telegramId: tId } });
+    if (!user) {
+      const dummyPhone = `tg_${tId}`;
+      const dummyHash = crypto.createHash("sha256").update(dummyPhone).digest("hex");
+      user = await prisma.user.create({
+        data: {
+          telegramId: tId,
+          name: `${telegramData.first_name || ""} ${telegramData.last_name || ""}`.trim() || telegramData.username || "Mijoz",
+          avatar: telegramData.photo_url || null,
+          phone: dummyPhone,
+          phoneHash: dummyHash,
+        }
+      });
+    }
+
+    const secret = process.env.JWT_SECRET || "samira_secret_key";
+    const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
+    
+    const cookieStore = await cookies();
+    cookieStore.set("user_session", token, {
+       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+    });
+
+    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+}
