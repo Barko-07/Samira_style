@@ -87,33 +87,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Testimonials */}
-          <h2 className="text-[20px] font-bold text-black mb-3">Mijozlar fikri</h2>
-          <div className="space-y-3 mb-6">
-            {[
-              { name: "Aziza M.", stars: 5, text: "Materiali ajoyib, rangi o'chmas! 😍 Doim shu yerdan xarid qilaman." },
-              { name: "Doniyor T.", stars: 5, text: "Tezkor yetkazib berish va hamyonbop narxlar. Tavsiya qilaman!" },
-              { name: "Malika S.", stars: 4, text: "Sifati juda yaxshi, 1 kunda yetib keldi. Rahmat!" },
-            ].map((r, i) => (
-              <div key={i} className="bg-white rounded-[20px] p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center text-white font-bold text-[13px]">
-                      {r.name[0]}
-                    </div>
-                    <span className="font-semibold text-[14px] text-black">{r.name}</span>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, si) => (
-                      <Star key={si} className={`w-3.5 h-3.5 ${si < r.stars ? "fill-[#FF9500] text-[#FF9500]" : "fill-gray-200 text-gray-200"}`} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-[#3C3C43] text-[14px] leading-relaxed">{r.text}</p>
-              </div>
-            ))}
-          </div>
-
           {/* CTA block */}
           <div className="bg-gradient-to-r from-[#1C1C1E] to-[#2C2C2E] rounded-[24px] p-6 text-center text-white mb-2">
             <MessageCircle className="w-8 h-8 mx-auto mb-3 text-[#007AFF]" />

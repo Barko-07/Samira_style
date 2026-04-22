@@ -259,6 +259,20 @@ function ProductCard({ p, items, addItem, toggleItem, isFavorite }: any) {
         <div className="p-3 flex flex-col flex-grow">
           <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-1">{p.category}</p>
           <h3 className="text-xs sm:text-sm font-semibold leading-snug line-clamp-2 mb-2 text-[var(--foreground)]">{p.title}</h3>
+          
+          {/* Rating and Review */}
+          <div className="mb-2">
+            <div className="flex items-center gap-1 mb-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3 h-3 fill-[#FF9500] text-[#FF9500]" />
+              ))}
+              <span className="text-[9px] text-[var(--muted)] ml-1">(124)</span>
+            </div>
+            <p className="text-[11px] text-[var(--muted)] line-clamp-2 italic">
+              "Sifati ajoyib! Tez yetib keldi." - Aziza M.
+            </p>
+          </div>
+          
           <div className="mt-auto">
             <p className="text-sm font-black text-[var(--foreground)]">
               {p.price.toLocaleString("ru")} so'm
