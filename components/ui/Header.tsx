@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
-import { ShoppingBag, X, ChevronRight, Plus, Minus, Trash2, Home, Heart, User, LayoutGrid } from "lucide-react";
+import { ShoppingBag, X, ChevronRight, Plus, Minus, Trash2, Home, Heart, User } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -31,9 +30,8 @@ export function Header() {
   }, []);
 
   const navLinks = [
-    { href: "/", label: "Bosh sahifa", icon: <Home className="w-5 h-5" /> },
-    { href: "/wishlist", label: "Sevimlilar", icon: <Heart className="w-5 h-5" /> },
-    { href: "/profile", label: "Profil", icon: <User className="w-5 h-5" /> },
+    { href: "/", label: "Bosh sahifa", icon: <Home className="w-[23px] h-[23px]" /> },
+    { href: "/wishlist", label: "Sevimlilar", icon: <Heart className="w-[23px] h-[23px]" /> },
   ];
 
   return (
@@ -51,6 +49,19 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              id="cart-btn"
+              className="relative p-2.5 rounded-full hover:bg-[var(--accent)]/10 transition-colors group"
+            >
+              <ShoppingBag className="w-5 h-5 text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors" />
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[var(--accent)] text-white text-[9px] font-black flex items-center justify-center animate-bounce-in">
+                  {getTotalItems() > 9 ? "9+" : getTotalItems()}
+                </span>
+              )}
+            </button>
+
             {tgUser ? (
               <Link
                 href="/profile"
@@ -69,19 +80,6 @@ export function Header() {
                 Kirish
               </Link>
             )}
-
-            <button
-              onClick={() => setIsCartOpen(true)}
-              id="cart-btn"
-              className="relative p-2.5 rounded-full hover:bg-[var(--accent)]/10 transition-colors group"
-            >
-              <ShoppingBag className="w-5 h-5 text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[var(--accent)] text-white text-[9px] font-black flex items-center justify-center animate-bounce-in">
-                  {getTotalItems() > 9 ? "9+" : getTotalItems()}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </header>
@@ -149,7 +147,7 @@ export function Header() {
                         className="w-4 h-4 rounded accent-[var(--accent)] cursor-pointer mt-1 flex-shrink-0"
                       />
                       <div className="relative w-16 h-18 rounded-xl overflow-hidden bg-[var(--border)] flex-shrink-0" style={{ height: "72px" }}>
-                        <Image src={item.image} alt={item.title} fill className="object-cover" unoptimized />
+                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-semibold line-clamp-2 leading-tight">{item.title}</h4>
@@ -215,43 +213,201 @@ export function Header() {
         </div>
       )}
 
-      {/* ── Bottom Navigation (Mobile Telegram) ─────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 glass border-t border-[var(--border)] sm:hidden safe-bottom">
-        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
+      {/* ── iOS-Style Floating Tab Bar (Main App) ─────────────── */}
+      <nav
+        className="fixed left-0 right-0 z-30 flex flex-col items-center sm:hidden"
+        style={{ bottom: "env(safe-area-inset-bottom, 12px)", paddingBottom: 12 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            background: "rgba(20, 20, 22, 0.88)",
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            borderRadius: 40,
+            padding: "6px 8px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3)",
+          }}
+        >
+          {/* Nav Links */}
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all ${
-                  isActive
-                    ? "text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 3,
+                  padding: "8px 20px",
+                  borderRadius: 32,
+                  transition: "transform 0.15s ease",
+                  textDecoration: "none",
+                }}
+                className="active:scale-90"
               >
-                {link.icon}
-                <span className="text-[10px] font-bold">{link.label}</span>
+                {isActive && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: 32,
+                      background: "rgba(249, 115, 22, 0.22)", // var(--accent) in orange
+                    }}
+                  />
+                )}
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    color: isActive ? "var(--accent)" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {link.icon}
+                </span>
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    fontSize: 9,
+                    fontWeight: 600,
+                    letterSpacing: "0.02em",
+                    color: isActive ? "var(--accent)" : "rgba(255,255,255,0.35)",
+                  }}
+                >
+                  {link.label}
+                </span>
               </Link>
             );
           })}
+
+          {/* Cart Tab */}
           <button
             onClick={() => setIsCartOpen(true)}
-            className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative ${
-              isCartOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"
-            }`}
+            style={{
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 3,
+              padding: "8px 20px",
+              borderRadius: 32,
+              transition: "transform 0.15s ease",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+            className="active:scale-90"
           >
-            <div className="relative">
-              <ShoppingBag className="w-5 h-5" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[var(--accent)] text-white text-[9px] font-black flex items-center justify-center">
-                  {getTotalItems() > 9 ? "9+" : getTotalItems()}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] font-bold">Savat</span>
+            {isCartOpen && (
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 32,
+                  background: "rgba(249, 115, 22, 0.22)",
+                }}
+              />
+            )}
+            <span
+              style={{
+                position: "relative",
+                zIndex: 1,
+                color: isCartOpen ? "var(--accent)" : "rgba(255,255,255,0.45)",
+              }}
+            >
+              <div className="relative">
+                <ShoppingBag className="w-[23px] h-[23px]" />
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-[var(--accent)] text-white text-[9px] font-black flex items-center justify-center px-1 shadow-lg">
+                    {getTotalItems() > 9 ? "9+" : getTotalItems()}
+                  </span>
+                )}
+              </div>
+            </span>
+            <span
+              style={{
+                position: "relative",
+                zIndex: 1,
+                fontSize: 9,
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                color: isCartOpen ? "var(--accent)" : "rgba(255,255,255,0.35)",
+              }}
+            >
+              Savat
+            </span>
           </button>
+
+          {/* Profile Tab */}
+          <Link
+            href="/profile"
+            style={{
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 3,
+              padding: "8px 20px",
+              borderRadius: 32,
+              transition: "transform 0.15s ease",
+              textDecoration: "none",
+            }}
+            className="active:scale-90"
+          >
+            {pathname === "/profile" && (
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 32,
+                  background: "rgba(249, 115, 22, 0.22)",
+                }}
+              />
+            )}
+            <span
+              style={{
+                position: "relative",
+                zIndex: 1,
+                color: pathname === "/profile" ? "var(--accent)" : "rgba(255,255,255,0.45)",
+              }}
+            >
+              <User className="w-[23px] h-[23px]" />
+            </span>
+            <span
+              style={{
+                position: "relative",
+                zIndex: 1,
+                fontSize: 9,
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                color: pathname === "/profile" ? "var(--accent)" : "rgba(255,255,255,0.35)",
+              }}
+            >
+              Profil
+            </span>
+          </Link>
         </div>
+
+        {/* iOS home indicator */}
+        <div
+          style={{
+            width: 134,
+            height: 5,
+            borderRadius: 9999,
+            background: "rgba(255,255,255,0.22)",
+            marginTop: 8,
+          }}
+        />
       </nav>
     </>
   );

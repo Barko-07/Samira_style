@@ -30,7 +30,7 @@ function verifyTelegramWebAppData(telegramInitData: string): Record<string, unkn
 
     const authDate = parseInt(initData.get("auth_date") || "0");
     const now = Math.floor(Date.now() / 1000);
-    if (now - authDate > 86400) return false; // expired after 1 day
+    if (now - authDate > 604800) return false; // expired after 7 days
 
     return JSON.parse(userParam) as Record<string, unknown>;
   } catch {
