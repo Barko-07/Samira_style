@@ -15,19 +15,21 @@ export function PublicTabBar() {
 
   return (
     <nav
-      className="fixed left-0 right-0 z-50 bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-4px_24px_rgba(0,0,0,0.02)]"
-      style={{ bottom: 0, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed left-0 right-0 z-50 px-4"
+      style={{ bottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-around",
+          justifyContent: "space-between",
           width: "100%",
-          maxWidth: 600,
+          maxWidth: 400,
           margin: "0 auto",
-          height: 64,
-          padding: "0 8px",
+          background: "#F2F2F7", // light gray pill background
+          borderRadius: 9999,
+          padding: 8,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
         }}
       >
         {tabs.map(({ href, label, Icon }) => {
@@ -38,47 +40,40 @@ export function PublicTabBar() {
               href={href}
               style={{
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 4,
-                width: "33%",
-                height: "100%",
+                gap: 8,
+                padding: isActive ? "8px 20px" : "8px 16px",
+                background: isActive ? "#ffffff" : "transparent",
+                borderRadius: 9999,
                 textDecoration: "none",
                 WebkitTapHighlightColor: "transparent",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: isActive ? "0 2px 10px rgba(0,0,0,0.04)" : "none",
               }}
             >
-              <div
+              <Icon
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 56,
-                  height: 32,
-                  borderRadius: 16,
-                  background: isActive ? "rgba(249, 115, 22, 0.15)" : "transparent",
-                  transition: "background 0.2s ease",
-                }}
-              >
-                <Icon
-                  style={{
-                    width: 24,
-                    height: 24,
-                    color: isActive ? "#ea580c" : "#0f172a",
-                    strokeWidth: isActive ? 2.5 : 2,
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: isActive ? 600 : 500,
+                  width: 22,
+                  height: 22,
                   color: isActive ? "#ea580c" : "#0f172a",
-                  letterSpacing: "-0.01em",
+                  strokeWidth: isActive ? 2.5 : 2,
+                  transition: "color 0.3s ease",
                 }}
-              >
-                {label}
-              </span>
+              />
+              {isActive && (
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#ea580c",
+                    letterSpacing: "-0.01em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
+              )}
             </Link>
           );
         })}
