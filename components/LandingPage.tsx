@@ -10,19 +10,13 @@ export default function LandingPage() {
       
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-[rgba(242,242,247,0.85)] backdrop-blur-xl border-b border-[rgba(0,0,0,0.08)]">
-        <div className="flex items-center justify-between px-5 h-12 max-w-xl mx-auto w-full">
+        <div className="flex items-center justify-center px-5 h-12 max-w-xl mx-auto w-full">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="text-[17px] font-bold tracking-tight text-black">Samira Style</span>
           </div>
-          <Link 
-            href="/auth/login"
-            className="text-[#007AFF] text-[15px] font-semibold active:opacity-60 transition-opacity"
-          >
-            Kirish
-          </Link>
         </div>
       </header>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+
 import { ShieldCheck, LogIn, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
@@ -9,11 +9,9 @@ import { googleLoginEndpoint, telegramWebLoginEndpoint, telegramMiniAppLoginEndp
 import { PublicTabBar } from "@/components/ui/PublicTabBar";
 
 function LoginPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  // Instead of redirecting to the origin point immediately, we force them to see Welcome screen.
-  // The welcome screen will redirect to `/` natively.
-  const redirectTo = "/welcome";
+  // Instead of redirecting to the origin point immediately, we force a hard reload
+  // to ensure Next.js clears the router cache and renders the StoreFront.
+  const redirectTo = "/";
 
   const [isLoading, setIsLoading] = useState(false);
   const [tgUser, setTgUser] = useState<any>(null);
@@ -53,7 +51,7 @@ function LoginPageContent() {
       
       if (!initData) {
         // No initData (browser preview) — redirect without server auth
-        router.push(redirectTo);
+        window.location.href = redirectTo;
         return;
       }
       
@@ -63,10 +61,10 @@ function LoginPageContent() {
         // Whether success or fail, just redirect — we already saved user locally
       } catch (_) {}
       
-      router.push(redirectTo);
+      window.location.href = redirectTo;
     } catch (e) {
       // Even on unexpected error, redirect gracefully
-      router.push(redirectTo);
+      window.location.href = redirectTo;
     }
   };
 
@@ -79,9 +77,9 @@ function LoginPageContent() {
         localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
       }
       // Redirect regardless of result
-      router.push(redirectTo);
+      window.location.href = redirectTo;
     } catch (e) {
-      router.push(redirectTo);
+      window.location.href = redirectTo;
     }
   };
 
@@ -91,7 +89,7 @@ function LoginPageContent() {
     try {
       const res = await googleLoginEndpoint(credentialResponse.credential);
       if (res.success) {
-        router.push(redirectTo);
+        window.location.href = redirectTo;
       } else {
         setError((res as any).error || "Google orqali kirishda xatolik yuz berdi");
         setIsLoading(false);
