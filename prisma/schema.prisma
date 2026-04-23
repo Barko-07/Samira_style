@@ -6,6 +6,179 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                  String     @id @default(cuid())
+  phone               String
+  phoneHash           String     @unique
+  email               String?    @unique
+  name                String?
+  avatar              String?
+  role                Role       @default(BUYER)
+  telegramId          String?    @unique
+  passwordHash        String?
+  twoFactorEnabled    Boolean    @default(false)
+  twoFactorSecret     String?
+  failedLoginAttempts Int        @default(0)
+  lockoutUntil        DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  auditLogs           AuditLog[]
+  buyerOrders         Order[]
+  reviews             Review[]
+  store               Store?
+
+  @@index([phoneHash])
+}
+
+model Store {
+  id          String    @id @default(cuid())
+  sellerId    String    @unique
+  name        String
+  logo        String?
+  description String?
+  verified    Boolean   @default(false)
+  rating      Float     @default(0)
+  balance     Int       @default(0)
+  kycDocument String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+  seller      User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([verified])
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  storeId     String
+  title       String
+  description String
+  price       Int
+  category    ProductCategory
+  images      String[]
+  status      ProductStatus    @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  store       Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  variants    ProductVariant[]
+  reviews     Review[]
+
+  @@index([storeId, status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  productId  String
+  size       Size
+  color      String
+  stock      Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  orderItems OrderItem[]
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, size, color])
+  @@index([productId])
+}
+
+model Order {
+  id           String        @id @default(cuid())
+  buyerId      String
+  status       OrderStatus   @default(PENDING_PAYMENT)
+  total        Int
+  address      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  buyer        User          @relation(fields: [buyerId], references: [id])
+  items        OrderItem[]
+  transactions Transaction[]
+
+  @@index([buyerId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id               String         @id @default(cuid())
+  orderId          String
+  productVariantId String
+  qty              Int
+  price            Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@index([orderId])
+  @@index([productVariantId])
+}
+
+model Transaction {
+  id             String            @id @default(cuid())
+  orderId        String
+  provider       PaymentProvider
+  amount         Int
+  status         TransactionStatus @default(INITIATED)
+  providerTxId   String?
+  idempotencyKey String?           @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@index([provider, providerTxId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  buyerId   String
+  productId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  buyer     User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, productId])
+  @@index([productId, createdAt])
+}
+
+model PromoCode {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  discount   Int
+  expiresAt  DateTime?
+  usageLimit Int?
+  usedCount  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  target    String?
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model CustomCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   BUYER
   SELLER
@@ -58,198 +231,3 @@ enum TransactionStatus {
   REFUNDED
   FAILED
 }
-
-model User {
-  id        String   @id @default(cuid())
-  phone     String   // encrypted ciphertext (AES-256) for at-rest protection
-  phoneHash String   @unique // deterministic hash for lookup
-  email     String?  @unique
-  name      String?
-  avatar    String?
-  role      Role     @default(BUYER)
-  telegramId String? @unique
-
-  passwordHash           String?
-  twoFactorEnabled       Boolean  @default(false)
-  twoFactorSecret        String?  // encrypted ciphertext
-  failedLoginAttempts    Int      @default(0)
-  lockoutUntil           DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  store       Store?
-  buyerOrders Order[]
-  reviews     Review[]
-  auditLogs   AuditLog[]
-  @@index([phoneHash])
-}
-
-model Store {
-  id          String  @id @default(cuid())
-  sellerId    String  @unique
-  name        String
-  logo        String?
-  description String?
-  verified    Boolean @default(false)
-  rating      Float   @default(0)
-  balance     Int     @default(0) // stored in tiyin (smallest currency unit)
-
-  kycDocument String? // Cloudinary URL
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  seller   User    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  products Product[]
-
-  @@index([verified])
-}
-
-model Product {
-  id          String          @id @default(cuid())
-  storeId     String
-  title       String
-  description String
-  price       Int             // stored in tiyin (smallest currency unit)
-  category    ProductCategory
-  images      String[]
-  status      ProductStatus   @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  store     Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  variants  ProductVariant[]
-  reviews   Review[]
-
-  @@index([storeId, status])
-  @@index([category])
-  @@index([createdAt])
-}
-
-model ProductVariant {
-  id        String @id @default(cuid())
-  productId String
-  size      Size
-  color     String
-  stock     Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
-
-  @@index([productId])
-  @@unique([productId, size, color])
-}
-
-model Order {
-  id       String      @id @default(cuid())
-  buyerId  String
-  status   OrderStatus @default(PENDING_PAYMENT)
-  total    Int         // tiyin
-  address  String      // encrypted ciphertext (AES-256)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  buyer        User          @relation(fields: [buyerId], references: [id], onDelete: Restrict)
-  items        OrderItem[]
-  transactions Transaction[]
-
-  @@index([buyerId, createdAt])
-  @@index([status])
-}
-
-model OrderItem {
-  id               String @id @default(cuid())
-  orderId          String
-  productVariantId String
-  qty              Int
-  price            Int // tiyin (snapshot)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  @@index([orderId])
-  @@index([productVariantId])
-}
-
-model Transaction {
-  id           String            @id @default(cuid())
-  orderId      String
-  provider     PaymentProvider
-  amount       Int               // tiyin
-  status       TransactionStatus @default(INITIATED)
-  providerTxId String?
-
-  idempotencyKey String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId, createdAt])
-  @@index([provider, providerTxId])
-}
-
-model Review {
-  id        String @id @default(cuid())
-  buyerId   String
-  productId String
-  rating    Int
-  comment   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  buyer   User    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([buyerId, productId])
-  @@index([productId, createdAt])
-}
-
-model PromoCode {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  discount   Int      // percent (0-100) or fixed tiyin (decide later)
-  expiresAt  DateTime?
-  usageLimit Int?
-  usedCount  Int      @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([expiresAt])
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  target    String?
-  ipAddress String?
-
-  createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-model CustomCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  isActive  Boolean  @default(true)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-

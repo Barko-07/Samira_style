@@ -65,8 +65,8 @@ function LoginPageContent() {
           setError((res as any).error || "Telegram orqali kirishda xatolik");
           setIsLoading(false);
         }
-      } catch (err) {
-        setError("Tizim xatosi. Qayta urinib ko'ring.");
+      } catch (err: any) {
+        setError(err?.message || "Tizim xatosi. Qayta urinib ko'ring.");
         setIsLoading(false);
       }
     } catch (e) {
@@ -112,8 +112,8 @@ function LoginPageContent() {
         setError((res as any).error || "Google orqali kirishda xatolik yuz berdi");
         setIsLoading(false);
       }
-    } catch (err) {
-      setError("Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+    } catch (err: any) {
+      setError(err?.message || "Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
       setIsLoading(false);
     }
   };
