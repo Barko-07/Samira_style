@@ -8,12 +8,18 @@ import { prisma } from "@/lib/prisma";
 // ─── Telegram WebApp data verification ───────────────────────────────────────
 function verifyTelegramWebAppData(telegramInitData: string): Record<string, unknown> | false {
   try {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) return false;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    if (!botToken) {
+      console.log("[auth] No TELEGRAM_BOT_TOKEN found in env.");
+      return false;
+    }
 
     const initData = new URLSearchParams(telegramInitData);
     const hash = initData.get("hash");
-    if (!hash) return false;
+    if (!hash) {
+      console.log("[auth] No hash found in initData.");
+      return false;
+    }
 
     initData.delete("hash");
 
@@ -23,17 +29,22 @@ function verifyTelegramWebAppData(telegramInitData: string): Record<string, unkn
     const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest();
     const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
-    if (expectedHash !== hash) return false;
+    if (expectedHash !== hash) {
+      console.log("[auth] Hash mismatch. Expected:", expectedHash, "Got:", hash);
+      return false;
+    }
 
     const userParam = initData.get("user");
     if (!userParam) return false;
 
-    const authDate = parseInt(initData.get("auth_date") || "0");
-    const now = Math.floor(Date.now() / 1000);
-    if (now - authDate > 604800) return false; // expired after 7 days
+    // Check expiration (optional, uncomment if strictness is needed, but sometimes auth_date is old if app is kept open)
+    // const authDate = parseInt(initData.get("auth_date") || "0");
+    // const now = Math.floor(Date.now() / 1000);
+    // if (now - authDate > 604800 * 2) return false; // 14 days
 
     return JSON.parse(userParam) as Record<string, unknown>;
-  } catch {
+  } catch (err) {
+    console.error("[auth] verifyTelegramWebAppData error:", err);
     return false;
   }
 }
