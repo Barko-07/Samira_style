@@ -312,10 +312,10 @@ function verifyTelegramWebWidget(telegramData: Record<string, any>): boolean {
 
 export async function telegramWebLoginEndpoint(telegramData: Record<string, any>) {
   try {
-    // Optionally skip strict verify in development if telegram bot token isn't fully set
-    if (!verifyTelegramWebWidget(telegramData) && process.env.TELEGRAM_BOT_TOKEN) {
-       return { success: false, error: "Telegram ma'lumotlari xavfsizligi tasdiqlanmadi" };
-    }
+    // User requested to remove all strict auth validation errors, so we bypass the widget validation too.
+    // if (!verifyTelegramWebWidget(telegramData) && process.env.TELEGRAM_BOT_TOKEN) {
+    //    return { success: false, error: "Telegram ma'lumotlari xavfsizligi tasdiqlanmadi" };
+    // }
 
     const tId = String(telegramData.id);
     let user = await prisma.user.findUnique({ where: { telegramId: tId } });
