@@ -15,20 +15,19 @@ export function PublicTabBar() {
 
   return (
     <nav
-      className="fixed left-0 right-0 z-50 flex flex-col items-center"
-      style={{ bottom: "env(safe-area-inset-bottom, 12px)", paddingBottom: 12 }}
+      className="fixed left-0 right-0 z-50 bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-4px_24px_rgba(0,0,0,0.02)]"
+      style={{ bottom: 0, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          background: "#ffffff",
-          border: "1px solid rgba(0,0,0,0.05)",
-          borderRadius: 48,
-          padding: "10px 24px",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04)",
+          justifyContent: "space-around",
+          width: "100%",
+          maxWidth: 600,
+          margin: "0 auto",
+          height: 64,
+          padding: "0 8px",
         }}
       >
         {tabs.map(({ href, label, Icon }) => {
@@ -38,15 +37,15 @@ export function PublicTabBar() {
               key={href}
               href={href}
               style={{
-                position: "relative",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 4,
-                width: 64,
+                width: "33%",
+                height: "100%",
                 textDecoration: "none",
-                transition: "all 0.2s ease",
+                WebkitTapHighlightColor: "transparent",
               }}
             >
               <div
@@ -54,7 +53,7 @@ export function PublicTabBar() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 44,
+                  width: 56,
                   height: 32,
                   borderRadius: 16,
                   background: isActive ? "rgba(249, 115, 22, 0.15)" : "transparent",
@@ -63,9 +62,9 @@ export function PublicTabBar() {
               >
                 <Icon
                   style={{
-                    width: 22,
-                    height: 22,
-                    color: isActive ? "#ea580c" : "#64748b",
+                    width: 24,
+                    height: 24,
+                    color: isActive ? "#ea580c" : "#0f172a",
                     strokeWidth: isActive ? 2.5 : 2,
                   }}
                 />
@@ -73,8 +72,8 @@ export function PublicTabBar() {
               <span
                 style={{
                   fontSize: 11,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? "#ea580c" : "#64748b",
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? "#ea580c" : "#0f172a",
                   letterSpacing: "-0.01em",
                 }}
               >

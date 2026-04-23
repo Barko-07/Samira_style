@@ -215,22 +215,19 @@ export function Header() {
 
       {/* ── iOS-Style Floating Tab Bar (Main App) ─────────────── */}
       <nav
-        className="fixed left-0 right-0 z-30 flex flex-col items-center sm:hidden"
-        style={{ bottom: "env(safe-area-inset-bottom, 12px)", paddingBottom: 12 }}
+        className="fixed left-0 right-0 z-30 bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-4px_24px_rgba(0,0,0,0.02)] sm:hidden"
+        style={{ bottom: 0, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            background: "#ffffff",
-            border: "1px solid rgba(0,0,0,0.05)",
-            borderRadius: 48,
-            padding: "10px 20px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04)",
+            justifyContent: "space-around",
             width: "100%",
-            maxWidth: 340,
+            maxWidth: 600,
+            margin: "0 auto",
+            height: 64,
+            padding: "0 8px",
           }}
         >
           {/* Nav Links */}
@@ -241,24 +238,23 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 style={{
-                  position: "relative",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 4,
-                  width: 60,
+                  width: "33%",
+                  height: "100%",
                   textDecoration: "none",
-                  transition: "all 0.2s ease",
+                  WebkitTapHighlightColor: "transparent",
                 }}
-                className="active:scale-95"
               >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 44,
+                    width: 56,
                     height: 32,
                     borderRadius: 16,
                     background: isActive ? "rgba(249, 115, 22, 0.15)" : "transparent",
@@ -267,7 +263,7 @@ export function Header() {
                 >
                   <span
                     style={{
-                      color: isActive ? "#ea580c" : "#64748b",
+                      color: isActive ? "#ea580c" : "#0f172a",
                       transition: "color 0.2s ease",
                     }}
                   >
@@ -276,9 +272,9 @@ export function Header() {
                 </div>
                 <span
                   style={{
-                    fontSize: 10,
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? "#ea580c" : "#64748b",
+                    fontSize: 11,
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? "#ea580c" : "#0f172a",
                     letterSpacing: "-0.01em",
                   }}
                 >
@@ -292,26 +288,25 @@ export function Header() {
           <button
             onClick={() => setIsCartOpen(true)}
             style={{
-              position: "relative",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: 4,
-              width: 60,
+              width: "33%",
+              height: "100%",
               border: "none",
               background: "transparent",
               cursor: "pointer",
-              transition: "all 0.2s ease",
+              WebkitTapHighlightColor: "transparent",
             }}
-            className="active:scale-95"
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 44,
+                width: 56,
                 height: 32,
                 borderRadius: 16,
                 background: isCartOpen ? "rgba(249, 115, 22, 0.15)" : "transparent",
@@ -319,7 +314,7 @@ export function Header() {
               }}
             >
               <div className="relative">
-                <ShoppingBag className="w-[23px] h-[23px]" style={{ color: isCartOpen ? "#ea580c" : "#64748b" }} />
+                <ShoppingBag className="w-[23px] h-[23px]" style={{ color: isCartOpen ? "#ea580c" : "#0f172a" }} />
                 {getTotalItems() > 0 && (
                   <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-[#ea580c] text-white text-[9px] font-black flex items-center justify-center px-1 shadow-sm">
                     {getTotalItems() > 9 ? "9+" : getTotalItems()}
@@ -329,9 +324,9 @@ export function Header() {
             </div>
             <span
               style={{
-                fontSize: 10,
-                fontWeight: isCartOpen ? 700 : 500,
-                color: isCartOpen ? "#ea580c" : "#64748b",
+                fontSize: 11,
+                fontWeight: isCartOpen ? 600 : 500,
+                color: isCartOpen ? "#ea580c" : "#0f172a",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -343,37 +338,36 @@ export function Header() {
           <Link
             href="/profile"
             style={{
-              position: "relative",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: 4,
-              width: 60,
+              width: "33%",
+              height: "100%",
               textDecoration: "none",
-              transition: "all 0.2s ease",
+              WebkitTapHighlightColor: "transparent",
             }}
-            className="active:scale-95"
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 44,
+                width: 56,
                 height: 32,
                 borderRadius: 16,
                 background: pathname === "/profile" ? "rgba(249, 115, 22, 0.15)" : "transparent",
                 transition: "background 0.2s ease",
               }}
             >
-              <User className="w-[23px] h-[23px]" style={{ color: pathname === "/profile" ? "#ea580c" : "#64748b" }} />
+              <User className="w-[23px] h-[23px]" style={{ color: pathname === "/profile" ? "#ea580c" : "#0f172a" }} />
             </div>
             <span
               style={{
-                fontSize: 10,
-                fontWeight: pathname === "/profile" ? 700 : 500,
-                color: pathname === "/profile" ? "#ea580c" : "#64748b",
+                fontSize: 11,
+                fontWeight: pathname === "/profile" ? 600 : 500,
+                color: pathname === "/profile" ? "#ea580c" : "#0f172a",
                 letterSpacing: "-0.01em",
               }}
             >
