@@ -49,22 +49,25 @@ function LoginPageContent() {
       // Always save user data locally
       localStorage.setItem("tg_user", JSON.stringify(tgUser));
       
-      if (!initData) {
-        // No initData (browser preview) — redirect without server auth
-        window.location.href = redirectTo;
-        return;
-      }
+      // If testing in browser (no initData), create a mock initData
+      const finalInitData = initData || `user=${encodeURIComponent(JSON.stringify(tgUser))}`;
       
-      // Try server-side auth but silently ignore errors
       try {
-        const res = await telegramMiniAppLoginEndpoint(initData);
-        // Whether success or fail, just redirect — we already saved user locally
-      } catch (_) {}
-      
-      window.location.href = redirectTo;
+        const res = await telegramMiniAppLoginEndpoint(finalInitData);
+        if (res.success) {
+          window.location.href = redirectTo;
+        } else {
+          // If server auth fails, stay on the login page and show the error to user.
+          setError((res as any).error || "Telegram orqali kirishda xatolik");
+          setIsLoading(false);
+        }
+      } catch (err) {
+        setError("Tizim xatosi. Qayta urinib ko'ring.");
+        setIsLoading(false);
+      }
     } catch (e) {
-      // Even on unexpected error, redirect gracefully
-      window.location.href = redirectTo;
+      setError("Tizim xatosi. Qayta urinib ko'ring.");
+      setIsLoading(false);
     }
   };
 
@@ -75,11 +78,14 @@ function LoginPageContent() {
       const res = await telegramWebLoginEndpoint(userAuthData);
       if (res.success) {
         localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
+        window.location.href = redirectTo;
+      } else {
+        setError((res as any).error || "Telegram bilan ulanishda xatolik yuz berdi");
+        setIsLoading(false);
       }
-      // Redirect regardless of result
-      window.location.href = redirectTo;
     } catch (e) {
-      window.location.href = redirectTo;
+      setError("Tizim xatosi. Qayta urinib ko'ring.");
+      setIsLoading(false);
     }
   };
 
@@ -156,7 +162,13 @@ function LoginPageContent() {
               <LogIn className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-[22px] font-extrabold text-center text-black mb-1">Xush kelibsiz!</h2>
-            <p className="text-[#6C6C70] text-center text-[14px] mb-6">Xaridlarni boshlash uchun tizimga kiring</p>
+            <p className="text-[#6C6C70] text-center text-[14px] mb-4">Xaridlarni boshlash uchun tizimga kiring</p>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium text-center">
+                {error}
+              </div>
+            )}
 
             {/* Tab Switcher */}
             <div className="flex bg-[#F2F2F7] rounded-2xl p-1 mb-6">

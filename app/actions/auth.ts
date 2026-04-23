@@ -247,7 +247,7 @@ export async function googleLoginEndpoint(credential: string) {
     
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
     });
 
     return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
@@ -316,7 +316,7 @@ export async function telegramWebLoginEndpoint(telegramData: Record<string, any>
     
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
     });
 
     return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
@@ -373,7 +373,7 @@ async function createSessionForTelegramUser(telegramData: any) {
     
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 86400 * 7
+       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
     });
 
     return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
