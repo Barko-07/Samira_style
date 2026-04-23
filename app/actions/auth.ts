@@ -342,7 +342,7 @@ export async function telegramWebLoginEndpoint(telegramData: Record<string, any>
        httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
     });
 
-    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+    return { success: true, token: token, user: { id: user.id, name: user.name, avatar: user.avatar } };
   } catch (error) {
     console.error("[auth] telegram web auth error:", error);
     return { success: false, error: "Telegram bilan kirishda xatolik yuz berdi" };
@@ -402,5 +402,5 @@ async function createSessionForTelegramUser(telegramData: any) {
        httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
     });
 
-    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+    return { success: true, token: token, user: { id: user.id, name: user.name, avatar: user.avatar } };
 }

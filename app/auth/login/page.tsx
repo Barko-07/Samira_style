@@ -55,6 +55,9 @@ function LoginPageContent() {
       try {
         const res = await telegramMiniAppLoginEndpoint(finalInitData);
         if (res.success) {
+          if ((res as any).token) {
+            document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; SameSite=None; Secure`;
+          }
           window.location.href = redirectTo;
         } else {
           // If server auth fails, stay on the login page and show the error to user.
@@ -78,6 +81,9 @@ function LoginPageContent() {
       const res = await telegramWebLoginEndpoint(userAuthData);
       if (res.success) {
         localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
+        if ((res as any).token) {
+          document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; SameSite=None; Secure`;
+        }
         window.location.href = redirectTo;
       } else {
         setError((res as any).error || "Telegram bilan ulanishda xatolik yuz berdi");
