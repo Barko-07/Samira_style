@@ -56,7 +56,8 @@ function LoginPageContent() {
         const res = await telegramMiniAppLoginEndpoint(finalInitData);
         if (res.success) {
           if ((res as any).token) {
-            document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; SameSite=None; Secure`;
+            const isProd = window.location.protocol === "https:";
+            document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; ${isProd ? "SameSite=None; Secure" : "SameSite=Lax"}`;
           }
           window.location.href = redirectTo;
         } else {
@@ -82,7 +83,8 @@ function LoginPageContent() {
       if (res.success) {
         localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
         if ((res as any).token) {
-          document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; SameSite=None; Secure`;
+          const isProd = window.location.protocol === "https:";
+          document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; ${isProd ? "SameSite=None; Secure" : "SameSite=Lax"}`;
         }
         window.location.href = redirectTo;
       } else {
@@ -101,6 +103,10 @@ function LoginPageContent() {
     try {
       const res = await googleLoginEndpoint(credentialResponse.credential);
       if (res.success) {
+        if ((res as any).token) {
+          const isProd = window.location.protocol === "https:";
+          document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; ${isProd ? "SameSite=None; Secure" : "SameSite=Lax"}`;
+        }
         window.location.href = redirectTo;
       } else {
         setError((res as any).error || "Google orqali kirishda xatolik yuz berdi");

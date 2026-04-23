@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/api/", "/_next/", "/favicon.ico"];
 
 // Public Exact paths that don't need auth
-const PUBLIC_EXACT = ["/", "/about", "/welcome"];
+const PUBLIC_EXACT = ["/", "/about"];
 
 // Admin sahifasi o'z tokenini tekshiradi, shuning uchun ochiq qoldiramiz
 const ADMIN_PATHS = ["/admin"];

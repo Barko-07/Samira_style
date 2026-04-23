@@ -268,12 +268,17 @@ export async function googleLoginEndpoint(credential: string) {
     const secret = process.env.JWT_SECRET || "samira_secret_key";
     const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
     
+    const isProd = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
+       httpOnly: true, 
+       secure: isProd, 
+       sameSite: isProd ? "none" : "lax", 
+       path: "/", 
+       maxAge: 86400 * 7
     });
 
-    return { success: true, user: { id: user.id, name: user.name, avatar: user.avatar } };
+    return { success: true, token: token, user: { id: user.id, name: user.name, avatar: user.avatar } };
   } catch (error) {
     console.error("[auth] google auth error:", error);
     return { success: false, error: "Google bilan kirishda xatolik yuz berdi" };
@@ -337,9 +342,14 @@ export async function telegramWebLoginEndpoint(telegramData: Record<string, any>
     const secret = process.env.JWT_SECRET || "samira_secret_key";
     const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
     
+    const isProd = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
+       httpOnly: true, 
+       secure: isProd, 
+       sameSite: isProd ? "none" : "lax", 
+       path: "/", 
+       maxAge: 86400 * 7
     });
 
     return { success: true, token: token, user: { id: user.id, name: user.name, avatar: user.avatar } };
@@ -371,9 +381,9 @@ export async function telegramMiniAppLoginEndpoint(initDataString: string) {
     }
     
     return await createSessionForTelegramUser(tgUser);
-  } catch (err) {
+  } catch (err: any) {
     console.error("[auth] telegram mini app login error:", err);
-    return { success: false, error: "Tizim xatosi" };
+    return { success: false, error: err?.message || "Tizim xatosi" };
   }
 }
 
@@ -397,9 +407,14 @@ async function createSessionForTelegramUser(telegramData: any) {
     const secret = process.env.JWT_SECRET || "samira_secret_key";
     const token = signJWT({ id: user.id, role: user.role, type: "user", exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, secret);
     
+    const isProd = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
     cookieStore.set("user_session", token, {
-       httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 86400 * 7
+       httpOnly: true, 
+       secure: isProd, 
+       sameSite: isProd ? "none" : "lax", 
+       path: "/", 
+       maxAge: 86400 * 7
     });
 
     return { success: true, token: token, user: { id: user.id, name: user.name, avatar: user.avatar } };
