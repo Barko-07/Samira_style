@@ -47,7 +47,11 @@ function LoginPageContent() {
     try {
       const initData = (window as any).Telegram?.WebApp?.initData;
       // Always save user data locally
-      localStorage.setItem("tg_user", JSON.stringify(tgUser));
+      try {
+        localStorage.setItem("tg_user", JSON.stringify(tgUser));
+      } catch (e) {
+        console.warn("localStorage error", e);
+      }
       
       // If testing in browser (no initData), create a mock initData
       const finalInitData = initData || `user=${encodeURIComponent(JSON.stringify(tgUser))}`;
@@ -66,11 +70,11 @@ function LoginPageContent() {
           setIsLoading(false);
         }
       } catch (err: any) {
-        setError(err?.message || "Tizim xatosi. Qayta urinib ko'ring.");
+        setError(`Inner error: ${err?.message || String(err)}`);
         setIsLoading(false);
       }
-    } catch (e) {
-      setError("Tizim xatosi. Qayta urinib ko'ring.");
+    } catch (e: any) {
+      setError(`Outer error: ${e?.message || String(e)}`);
       setIsLoading(false);
     }
   };
@@ -78,10 +82,14 @@ function LoginPageContent() {
   const handleWebTelegramLogin = async (userAuthData: any) => {
     setIsLoading(true);
     try {
-      localStorage.setItem("tg_user", JSON.stringify(userAuthData));
+      try {
+        localStorage.setItem("tg_user", JSON.stringify(userAuthData));
+      } catch (e) {}
       const res = await telegramWebLoginEndpoint(userAuthData);
       if (res.success) {
-        localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
+        try {
+          localStorage.setItem("tg_user", JSON.stringify((res as any).user || userAuthData));
+        } catch(e) {}
         if ((res as any).token) {
           const isProd = window.location.protocol === "https:";
           document.cookie = `user_session=${(res as any).token}; path=/; max-age=${86400 * 7}; ${isProd ? "SameSite=None; Secure" : "SameSite=Lax"}`;
@@ -91,8 +99,8 @@ function LoginPageContent() {
         setError((res as any).error || "Telegram bilan ulanishda xatolik yuz berdi");
         setIsLoading(false);
       }
-    } catch (e) {
-      setError("Tizim xatosi. Qayta urinib ko'ring.");
+    } catch (e: any) {
+      setError(`Web error: ${e?.message || String(e)}`);
       setIsLoading(false);
     }
   };
