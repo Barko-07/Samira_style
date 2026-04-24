@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 // ─── Safe Prisma initialization ───────────────────────────────────────────────
-// Supports both Neon (serverless) and standard PostgreSQL connections.
+// Uses pg adapter natively for stable connection pooling.
 // If DATABASE_URL is missing, prisma is null — server actions fall back to
 // mock data gracefully instead of crashing.
 
@@ -15,19 +17,9 @@ function createPrismaClient(): PrismaClient | null {
   }
 
   try {
-    // Use Neon serverless adapter when available
-    if (dbUrl.includes("neon.tech") || dbUrl.includes("neon.db")) {
-      const { Pool, neonConfig } = require("@neondatabase/serverless");
-      const { PrismaNeon } = require("@prisma/adapter-neon");
-      const ws = require("ws");
-      neonConfig.webSocketConstructor = ws;
-      const pool = new Pool({ connectionString: dbUrl });
-      const adapter = new PrismaNeon(pool);
-      return new PrismaClient({ adapter } as never);
-    }
-
-    // Standard PostgreSQL connection
-    return new PrismaClient();
+    const pool = new Pool({ connectionString: dbUrl });
+    const adapter = new PrismaPg(pool);
+    return new PrismaClient({ adapter });
   } catch (err) {
     console.error("[prisma] Failed to initialize Prisma client:", err);
     return null;
