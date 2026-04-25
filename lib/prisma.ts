@@ -1,11 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
 
-// ─── Safe Prisma initialization ───────────────────────────────────────────────
-// Uses pg adapter natively for stable connection pooling.
-// If DATABASE_URL is missing, prisma is null — server actions fall back to
-// mock data gracefully instead of crashing.
+// ─── Safe Prisma initialization (Prisma 7) ────────────────────────────────────
+// Prisma 7 da adapter va url konfiguratsiyasi prisma.config.ts orqali beriladi.
+// Bu yerda oddiy PrismaClient yaratamiz.
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient | null };
 
@@ -17,9 +14,7 @@ function createPrismaClient(): PrismaClient | null {
   }
 
   try {
-    const pool = new Pool({ connectionString: dbUrl });
-    const adapter = new PrismaPg(pool);
-    return new PrismaClient({ adapter });
+    return new PrismaClient();
   } catch (err) {
     console.error("[prisma] Failed to initialize Prisma client:", err);
     return null;
@@ -33,3 +28,4 @@ export const prisma: PrismaClient =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
